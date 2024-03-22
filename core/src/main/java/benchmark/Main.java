@@ -125,7 +125,6 @@ public class Main {
         } catch (TokenGenerationException e) {
             throw new RuntimeException(e);
         }
-        //TODO We could do extra bench here, maybe without full "protocol", like Doing x Range proofs with different parameters, inrange vs lt/gt...
     }
 
     private static void doBench(ThresholdPSSharesGenerator issuer, PSCredentialManagement client, PSPABCVerifier verifier,Policy policy) throws TokenGenerationException {

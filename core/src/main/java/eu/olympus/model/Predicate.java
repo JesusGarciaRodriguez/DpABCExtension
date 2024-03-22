@@ -62,4 +62,30 @@ public class Predicate {
 	public void setExtraValue(Attribute extraValue) {
 		this.extraValue = extraValue;
 	}
+
+	public String serialProofGoal(){
+		StringBuilder builder=new StringBuilder();
+		builder.append(operation).append("_");
+		switch (operation){
+			case LESSTHANOREQUAL:
+			case REVOCATION:
+			case PSEUDONYM:
+			case GREATERTHANOREQUAL:
+				builder.append(value.getAttr().toString());
+				break;
+			case EQ:
+				builder.append(attributeName).append("_").append(value.getAttr().toString());
+				break;
+			case REVEAL:
+				builder.append(attributeName);
+				break;
+			case INRANGE:
+				builder.append(value.getAttr().toString()).append(extraValue.getAttr().toString());
+				break;
+			case INSPECTION:
+				builder.append("inspector");
+				break;
+		}
+		return builder.toString();
+	}
 }
