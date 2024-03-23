@@ -20,9 +20,10 @@ public class InspectionVerifier {
 	 * @param commitmentBase : the base of the commitment scheme
 	 * @param inspectionKey  : the public key under which the identity has been encrypted
 	 * @param token          : the actual proof that the commitment and encryption are correct
+	 * @param context
 	 * @return
 	 **/
-    public InspectionPredicateVerificationResult verifyInspectionPredicate(PedersenBase commitmentBase, ElGamalKey inspectionKey, InspectionPredicateToken token){
+    public InspectionPredicateVerificationResult verifyInspectionPredicate(PedersenBase commitmentBase, ElGamalKey inspectionKey, InspectionPredicateToken token, String context){
 		//System.err.println("Inspection verifier");
     	ZpElement Sid = token.getSid();
     	ZpElement Srand = token.getSrand();
@@ -45,7 +46,7 @@ public class InspectionVerifier {
     	ElGamalCiphertext t_E = new ElGamalCiphertext(t_E1,t_E2);
     	
         // Recompute challenge and check that it's the same
-    	ZpElement cprime = newChallenge(V,E,t_V,t_E,builder);
+    	ZpElement cprime = newChallenge(V,E,t_V,t_E, context, builder);
 
     	return (c.equals(cprime)? InspectionPredicateVerificationResult.VALID : InspectionPredicateVerificationResult.INVALID);
     }

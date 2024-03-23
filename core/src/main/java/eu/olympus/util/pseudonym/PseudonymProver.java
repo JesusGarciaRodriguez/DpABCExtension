@@ -2,23 +2,14 @@ package eu.olympus.util.pseudonym;
 
 import eu.olympus.model.Attribute;
 import eu.olympus.model.AttributeDefinition;
-import eu.olympus.model.PSCredential;
-import eu.olympus.model.exceptions.MSSetupException;
-import eu.olympus.model.exceptions.SetupException;
 import eu.olympus.util.Pair;
 import eu.olympus.util.model.PedersenBase;
 import eu.olympus.util.model.PedersenCommitment;
-import eu.olympus.util.multisign.*;
 import eu.olympus.util.pairingInterfaces.Group1Element;
 import eu.olympus.util.pairingInterfaces.PairingBuilder;
 import eu.olympus.util.pairingInterfaces.ZpElement;
-import eu.olympus.util.psmultisign.PSauxArg;
-import eu.olympus.util.psmultisign.PSmessage;
-import eu.olympus.util.psmultisign.PSms;
-import eu.olympus.util.psmultisign.PSpublicParam;
 
 import java.nio.charset.StandardCharsets;
-import java.util.*;
 
 import static eu.olympus.util.pseudonym.tools.Utils.newChallenge;
 
@@ -36,10 +27,12 @@ public class PseudonymProver {
 
     /**
      * Generates a token for a pseudonym proof, i.e. generates a pseudonym and a proof that it matches the identity attribute in the credential
+     *
      * @param TODO
+     * @param context
      * @return
      */
-    public Pair<PseudonymPredicateToken,PedersenCommitment> generatePseudonymPredicateToken(PedersenBase base, Attribute idAttribute, AttributeDefinition idDefinition,  String scope){
+    public Pair<PseudonymPredicateToken,PedersenCommitment> generatePseudonymPredicateToken(PedersenBase base, Attribute idAttribute, AttributeDefinition idDefinition, String scope, String context){
         //Compute the Pedersen Commitment on the identity attribute
         //System.err.println("PseudonymProver");
         ZpElement id  = builder.getZpElementFromAttribute(idAttribute,idDefinition);
@@ -55,7 +48,7 @@ public class PseudonymProver {
         Group1Element t_v=base.getG().exp(r_id).mul(base.getH().exp(r_open));
         Group1Element t_p=g_scope.exp(r_id);
         //Challenge
-        ZpElement c=newChallenge(base.getG(), base.getH(), g_scope,V.getV(),p,t_v,t_p,builder);
+        ZpElement c=newChallenge(base.getG(), base.getH(), g_scope,V.getV(),p,t_v,t_p, context, builder);
         //Compute s_id, s_open
         ZpElement s_id=r_id.add(c.mul(id));
         ZpElement s_open=r_open.add(c.mul(open));

@@ -58,12 +58,12 @@ public class PSPABCVerifier implements PABCVerifier {
             multiSignatureScheme.setup(schemePublicParameters.getN(), auxArg, seed);
             builder = (PairingBuilder) Class.forName(auxArg.getPairingName()).newInstance();
             builder.seedRandom(seed);
-        } catch (Exception e) {//TODO Handle exception
+        } catch (Exception e) {// Handle exception
             throw new RuntimeException("Could not create scheme", e);
         }
         MSverfKey[] verificationKeySharesArray = new MSverfKey[servers.size()];
         for (int i = 0; i < servers.size(); i++) {
-            verificationKeySharesArray[i] = servers.get(i).getPabcPublicKeyShare(); //TODO Concurrent
+            verificationKeySharesArray[i] = servers.get(i).getPabcPublicKeyShare(); // Concurrent
         }
         this.olympusVerificationKey = multiSignatureScheme.kAggreg(verificationKeySharesArray);
         this.attrDefMap=attributeDefinitions.stream().collect(Collectors.toMap(e-> e.getId().toLowerCase(),
@@ -93,7 +93,7 @@ public class PSPABCVerifier implements PABCVerifier {
         }
         multiSignatureScheme=new PSms();
         PSauxArg auxArg= (PSauxArg) schemePublicParameters.getAuxArg();
-        multiSignatureScheme.setup(schemePublicParameters.getN(),auxArg, seed); //TODO Treat exception instead of throwing it?
+        multiSignatureScheme.setup(schemePublicParameters.getN(),auxArg, seed); // Treat exception instead of throwing it?
         if(!checkAttributeDefinitions())
             throw new IllegalArgumentException("Conflicting sets of attribute names");
         this.olympusVerificationKey=olympusVerificationKey;
@@ -165,7 +165,7 @@ public class PSPABCVerifier implements PABCVerifier {
                 return VerificationResult.POLICY_NOT_FULFILLED;
             if(reconstructedToken.getEpoch()<System.currentTimeMillis())
                 return VerificationResult.BAD_TIMESTAMP;
-
+            String context=policy.generateZkContext();
             Map<String, ZpElement> revealedZpAttributes=new HashMap<>();
             Map<String,Attribute> revealedAttributes=reconstructedToken.getRevealedAttributes();
             for(String attr:revealedAttributes.keySet()){
@@ -177,7 +177,7 @@ public class PSPABCVerifier implements PABCVerifier {
             if(rangePredicates.isEmpty() && inspectionPredicate == null && revocationPredicate == null && pseudonymPredicate==null){
                 if(!(reconstructedToken.getZkToken() instanceof PSzkToken))
                     return VerificationResult.INVALID_SIGNATURE;
-                if(!multiSignatureScheme.verifyZKtoken(reconstructedToken.getZkToken(),olympusVerificationKey,policy.getPolicyId(), revealedAttributesMessage)) {
+                if(!multiSignatureScheme.verifyZKtoken(reconstructedToken.getZkToken(),olympusVerificationKey,context, revealedAttributesMessage)) {
                     return VerificationResult.INVALID_SIGNATURE;
                 }
                 return VerificationResult.VALID;
@@ -194,12 +194,12 @@ public class PSPABCVerifier implements PABCVerifier {
 	                    return VerificationResult.INVALID_SIGNATURE;
 	                Vp.putAll(reconstructedToken.getRangeTokens().entrySet().stream().collect(Collectors.toMap(e -> e.getKey(),e -> e.getValue().getCommitV())));
 
-	                RangeVerifier verifier=new RangeVerifier(policy.getPolicyId(),builder);
+	                RangeVerifier verifier=new RangeVerifier(context,builder);
 	                for(Predicate p:rangePredicates){
 	                    String attrId=p.getAttributeName().toLowerCase();
 	                    AttributeDefinition def=attrDefMap.get(attrId);//Already checked that they are all present
 	                    PedersenBase base = new PedersenBase(key.getVY().get(attrId), key.getVX()); //Base has to be g=Y_j h=X
-	                    if(verifier.verifyRangePredicate(base,reconstructedToken.getRangeTokens().get(attrId),def,p)== RangePredicateVerificationResult.INVALID)
+	                    if(verifier.verifyRangePredicate(base,reconstructedToken.getRangeTokens().get(attrId),def,p, context)== RangePredicateVerificationResult.INVALID)
 	                        return VerificationResult.INVALID_SIGNATURE;
 	                }
             	}
@@ -213,7 +213,7 @@ public class PSPABCVerifier implements PABCVerifier {
                     
                 	Vp.put(attrId, reconstructedToken.getInspectionToken().getV());
                 	
-                    InspectionPredicateVerificationResult inspectionResult = inspectionVerifier.verifyInspectionPredicate(base, inspectionKey, reconstructedToken.getInspectionToken());
+                    InspectionPredicateVerificationResult inspectionResult = inspectionVerifier.verifyInspectionPredicate(base, inspectionKey, reconstructedToken.getInspectionToken(), context);
                     if (inspectionResult != InspectionPredicateVerificationResult.VALID) {
                     	return VerificationResult.INVALID_SIGNATURE;
                     }
@@ -227,8 +227,8 @@ public class PSPABCVerifier implements PABCVerifier {
                     PedersenBase base = new PedersenBase(key.getVY().get(attrId), key.getVX()); //Base has to be g=Y_j h=X
 
                     Vp.put(attrId, reconstructedToken.getPseudonymToken().getV());
-                    String scope=(String)pseudonymPredicate.getValue().getAttr(); //TODO Maybe do some check
-                    PseudonymPredicateVerificationResult pseudonymResult = pseudonymVerifier.verifyPseudonymPredicate(base, reconstructedToken.getPseudonymToken(), scope);
+                    String scope=(String)pseudonymPredicate.getValue().getAttr();
+                    PseudonymPredicateVerificationResult pseudonymResult = pseudonymVerifier.verifyPseudonymPredicate(base, reconstructedToken.getPseudonymToken(), scope, context);
                     if (pseudonymResult != PseudonymPredicateVerificationResult.VALID) {
                         return VerificationResult.INVALID_SIGNATURE;
                     }
@@ -244,20 +244,20 @@ public class PSPABCVerifier implements PABCVerifier {
                 	Vp.put(attrId, reconstructedToken.getRevocationToken().getV_issuer());
                 	
                 	Integer expectedEpoch = (Integer) revocationPredicate.getValue().getAttr();
-                	RevocationPredicateVerificationResult revocationResult = revocationVerifier.verifyRevocationPredicate(base,definition, reconstructedToken.getRevocationToken(), revocationVerfKey, policy.getPolicyId(), expectedEpoch);
+                	RevocationPredicateVerificationResult revocationResult = revocationVerifier.verifyRevocationPredicate(base,definition, reconstructedToken.getRevocationToken(), revocationVerfKey, context, expectedEpoch);
 
                     if (revocationResult != RevocationPredicateVerificationResult.VALID) {
                     	return VerificationResult.INVALID_SIGNATURE;
                     }
             	}
             	
-                if(!multiSignatureScheme.verifyZKtokenModified(reconstructedToken.getZkToken(),olympusVerificationKey,policy.getPolicyId(), revealedAttributesMessage,Vp))
+                if(!multiSignatureScheme.verifyZKtokenModified(reconstructedToken.getZkToken(),olympusVerificationKey,context, revealedAttributesMessage,Vp))
                     return VerificationResult.INVALID_SIGNATURE;
             	
                 return VerificationResult.VALID;
             }
         } catch (InvalidProtocolBufferException e) {
-            return VerificationResult.INVALID_SIGNATURE; //TODO Maybe new type: INVALID_TOKEN (and other types for more info e.g: invalid policy )?
+            return VerificationResult.INVALID_SIGNATURE; // Maybe new type: INVALID_TOKEN (and other types for more info e.g: invalid policy )?
         } catch (SetupException e) {
             throw new RuntimeException(e);
         }

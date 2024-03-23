@@ -43,13 +43,15 @@ public class RangeProver {
     //If the range needed corresponds exactly to a [0,2^(2^n)-1] range we could avoid using two proofs (it is a fringe case, but could be "optimized")
     /**
      * Generates a token for a range predicate (lt,gt,inRange), for the attribute value "value" and the corresponding attribute definition.
-     * @param base Pedersen base for the proof (for use in PSCredentialManager it will be h=X, g=Y_{attrDefId})
-     * @param value The attribute value that we want to prove it fulfils the predicate
+     *
+     * @param base                Pedersen base for the proof (for use in PSCredentialManager it will be h=X, g=Y_{attrDefId})
+     * @param value               The attribute value that we want to prove it fulfils the predicate
      * @param attributeDefinition The corresponding attribute definition. It has to be "numerical" (Integer or Date)
-     * @param pred Predicate we want to prove
+     * @param pred                Predicate we want to prove
+     * @param context
      * @return
      */
-    public RangePredicateToken generateRangePredicateToken(PedersenBase base, Attribute value, AttributeDefinition attributeDefinition, Predicate pred){
+    public RangePredicateToken generateRangePredicateToken(PedersenBase base, Attribute value, AttributeDefinition attributeDefinition, Predicate pred, String context){
         //System.err.println("Range prover");
         if(!(attributeDefinition instanceof AttributeDefinitionInteger || attributeDefinition instanceof AttributeDefinitionDate))
             throw new IllegalArgumentException("Must be a supported 'numerical' attribute definition for a range proof");
@@ -62,21 +64,21 @@ public class RangeProver {
             throw new IllegalArgumentException("Predicate value not valid for definition");
         switch (pred.getOperation()){
             case LESSTHANOREQUAL:
-                return generateRangePredicateTokenLessThan(base,value,attributeDefinition,pred.getValue());
+                return generateRangePredicateTokenLessThan(base,value,attributeDefinition,pred.getValue(), context);
             case GREATERTHANOREQUAL:
-                return generateRangePredicateTokenGreaterThan(base,value,attributeDefinition,pred.getValue());
+                return generateRangePredicateTokenGreaterThan(base,value,attributeDefinition,pred.getValue(), context);
             case INRANGE:
                 if(pred.getExtraValue()==null || !attributeDefinition.checkValidValue(pred.getExtraValue()))
                     throw new IllegalArgumentException("Predicate extra value not valid for definition");
                 checkRange(pred.getValue(),pred.getExtraValue());
-                return generateRangePredicateTokenInRange(base,value,attributeDefinition,pred.getValue(),pred.getExtraValue());
+                return generateRangePredicateTokenInRange(base,value,attributeDefinition,pred.getValue(),pred.getExtraValue(), context);
             default:
                 throw new IllegalArgumentException("Predicate operation not for range proof: "+pred.getOperation());
         }
     }
 
 
-    private RangePredicateToken generateRangePredicateTokenLessThan(PedersenBase base, Attribute value, AttributeDefinition attributeDefinition, Attribute upperBound) {
+    private RangePredicateToken generateRangePredicateTokenLessThan(PedersenBase base, Attribute value, AttributeDefinition attributeDefinition, Attribute upperBound, String context) {
         int m= Util.nextPowerOfPowerOfTwo(attributeDefinition.toBigIntegerRepresentation(upperBound));
         ////System.err.println("M:"+m);
         RangeProofBase rangeProofBase=Utils.generateRangeProofBase(m,salt,builder);
@@ -87,12 +89,12 @@ public class RangeProver {
         PedersenCommitment witness=new PedersenCommitment(base.getG(),base.getH(), x, gamma);     //V=X^gamma Y^x
         PedersenCommitment witnessPrime=new PedersenCommitment(base.getG(),base.getH(), x.add(offset), gamma); //V'=X^gamma Y^(x+offset)
         //RangeProof proofLowerBound=prover.generateProof(rangeProofBase,witness); //Prove x>=0 (i.e., no trick with modular arithmetic)
-        RangeProof proofUpperBound=prover.generateProof(rangeProofBase,witnessPrime); //Prove x<=upperBound
+        RangeProof proofUpperBound=prover.generateProof(rangeProofBase,witnessPrime, context); //Prove x<=upperBound
         generatedCommitments.put(attributeDefinition.getId().toLowerCase(),witness);
         return new RangePredicateToken(null,proofUpperBound,witness.getV());
     }
 
-    private RangePredicateToken generateRangePredicateTokenGreaterThan(PedersenBase base, Attribute value, AttributeDefinition attributeDefinition, Attribute lowerBound) {
+    private RangePredicateToken generateRangePredicateTokenGreaterThan(PedersenBase base, Attribute value, AttributeDefinition attributeDefinition, Attribute lowerBound, String context) {
         Attribute upperBound;
         if(attributeDefinition instanceof AttributeDefinitionInteger){
             upperBound=new Attribute(((AttributeDefinitionInteger) attributeDefinition).getMaximumValue());
@@ -107,13 +109,13 @@ public class RangeProver {
         ZpElement a= builder.getZpElementFromAttribute(lowerBound,attributeDefinition);
         PedersenCommitment witness=new PedersenCommitment(base.getG(),base.getH(), x, gamma);     //V=X^gamma Y^x
         PedersenCommitment witnessPrime=new PedersenCommitment(base.getG(),base.getH(), x.sub(a), gamma); //V'=X^gamma Y^(x-a)
-        RangeProof proofLowerBound=prover.generateProof(rangeProofBase,witnessPrime); //Prove x>=lowerBound
+        RangeProof proofLowerBound=prover.generateProof(rangeProofBase,witnessPrime, context); //Prove x>=lowerBound
         //RangeProof proofUpperBound=prover.generateProof(rangeProofBase,witness); //Prove x<=MAX_VALUE (i.e. no trick with modular arithmetic)
         generatedCommitments.put(attributeDefinition.getId().toLowerCase(),witness);
         return new RangePredicateToken(proofLowerBound,null,witness.getV());
     }
 
-    private RangePredicateToken generateRangePredicateTokenInRange(PedersenBase base, Attribute value, AttributeDefinition attributeDefinition, Attribute lowerBound, Attribute upperBound) {
+    private RangePredicateToken generateRangePredicateTokenInRange(PedersenBase base, Attribute value, AttributeDefinition attributeDefinition, Attribute lowerBound, Attribute upperBound, String context) {
         int m= Util.nextPowerOfPowerOfTwo(attributeDefinition.toBigIntegerRepresentation(upperBound));
         RangeProofBase rangeProofBase=Utils.generateRangeProofBase(m,salt,builder);
         RangeProofProver prover=new RangeProofProver(builder);
@@ -123,8 +125,8 @@ public class RangeProver {
         ZpElement a= builder.getZpElementFromAttribute(lowerBound,attributeDefinition);
         PedersenCommitment witnessA=new PedersenCommitment(base.getG(),base.getH(), x.sub(a), gamma);     //V=X^gamma Y^(x-a)
         PedersenCommitment witnessO=new PedersenCommitment(base.getG(),base.getH(), x.add(offset), gamma); //V'=X^gamma Y^(x+offset)
-        RangeProof proofLowerBound=prover.generateProof(rangeProofBase,witnessA); //Prove x>=lowerBound
-        RangeProof proofUpperBound=prover.generateProof(rangeProofBase,witnessO); //Prove x<=upperBound
+        RangeProof proofLowerBound=prover.generateProof(rangeProofBase,witnessA, context); //Prove x>=lowerBound
+        RangeProof proofUpperBound=prover.generateProof(rangeProofBase,witnessO, context); //Prove x<=upperBound
         PedersenCommitment witness=new PedersenCommitment(base.getG(),base.getH(), x, gamma);
         generatedCommitments.put(attributeDefinition.getId().toLowerCase(),witness);
         return new RangePredicateToken(proofLowerBound,proofUpperBound,witness.getV());

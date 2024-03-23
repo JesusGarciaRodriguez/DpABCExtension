@@ -32,9 +32,9 @@ public class TestPseudonymProofs {
         PseudonymProver prover=new PseudonymProver(builder);
         PedersenBase base=generateTestPedersenBase(builder);
         Attribute id=new Attribute(10312);
-        Pair<PseudonymPredicateToken, PedersenCommitment> result=prover.generatePseudonymPredicateToken(base,id,definitionInspectionAttribute,scope);
+        Pair<PseudonymPredicateToken, PedersenCommitment> result=prover.generatePseudonymPredicateToken(base,id,definitionInspectionAttribute,scope, "context");
         PseudonymVerifier verifier=new PseudonymVerifier(builder);
-        assertSame(VALID, verifier.verifyPseudonymPredicate(base, result.getFirst(), scope));
+        assertSame(VALID, verifier.verifyPseudonymPredicate(base, result.getFirst(), scope, "context"));
     }
 
 
@@ -49,18 +49,19 @@ public class TestPseudonymProofs {
         PedersenBase base=generateTestPedersenBase(builder);
         Attribute id=new Attribute(10312);
         Attribute anotherId=new Attribute(20312);
-        Pair<PseudonymPredicateToken, PedersenCommitment> result=prover.generatePseudonymPredicateToken(base,id,definitionInspectionAttribute,scope);
-        Pair<PseudonymPredicateToken, PedersenCommitment> result2=prover.generatePseudonymPredicateToken(base,anotherId,definitionInspectionAttribute,anotherScope);
+        Pair<PseudonymPredicateToken, PedersenCommitment> result=prover.generatePseudonymPredicateToken(base,id,definitionInspectionAttribute,scope, "context");
+        Pair<PseudonymPredicateToken, PedersenCommitment> result2=prover.generatePseudonymPredicateToken(base,anotherId,definitionInspectionAttribute,anotherScope, "context");
         PseudonymPredicateToken token=result.getFirst();
         PseudonymPredicateToken token2=result2.getFirst();
         PseudonymPredicateToken modifiedToken=new PseudonymPredicateToken(token2.getV(),token.getP(),token.getS_id(),token.getS_open(),token.getC());
         PseudonymPredicateToken modifiedToken2=new PseudonymPredicateToken(token.getV(),token2.getP(),token.getS_id(),token.getS_open(),token.getC());
         PseudonymVerifier verifier=new PseudonymVerifier(builder);
-        assertSame(INVALID, verifier.verifyPseudonymPredicate(base, token, anotherScope));
-        assertSame(INVALID, verifier.verifyPseudonymPredicate(base, modifiedToken, scope));
-        assertSame(INVALID, verifier.verifyPseudonymPredicate(base, modifiedToken2, scope));
-        assertSame(INVALID, verifier.verifyPseudonymPredicate(base, modifiedToken, anotherScope));
-        assertSame(INVALID, verifier.verifyPseudonymPredicate(base, modifiedToken2, anotherScope));
+        assertSame(INVALID, verifier.verifyPseudonymPredicate(base, token, anotherScope, "context"));
+        assertSame(INVALID, verifier.verifyPseudonymPredicate(base, modifiedToken, scope, "context"));
+        assertSame(INVALID, verifier.verifyPseudonymPredicate(base, modifiedToken2, scope, "context"));
+        assertSame(INVALID, verifier.verifyPseudonymPredicate(base, modifiedToken, anotherScope, "context"));
+        assertSame(INVALID, verifier.verifyPseudonymPredicate(base, modifiedToken2, anotherScope, "context"));
+        assertSame(INVALID, verifier.verifyPseudonymPredicate(base, token, scope, "fake-context"));
     }
 
 

@@ -41,12 +41,11 @@ public class TestRangeProofs {
         Predicate predInt2=new Predicate(definitionInt.getId(),Operation.LESSTHANOREQUAL,new Attribute(150));
         Predicate predInt3=new Predicate(definitionInt.getId(),Operation.INRANGE,new Attribute(99),new Attribute(101));
         PedersenBase baseInt=generateTestPedersenBase(builder);
-        RangePredicateToken tokenInt1=prover.generateRangePredicateToken(baseInt,intValue,definitionInt,predInt1);
+        RangePredicateToken tokenInt1=prover.generateRangePredicateToken(baseInt,intValue,definitionInt,predInt1, "context");
         long start=System.currentTimeMillis();
-        RangePredicateToken tokenInt2=prover.generateRangePredicateToken(baseInt,intValue,definitionInt,predInt2); // Commitment Map will not work well (though for this case it is not a problem)
+        RangePredicateToken tokenInt2=prover.generateRangePredicateToken(baseInt,intValue,definitionInt,predInt2, "context"); // Commitment Map will not work well (though for this case it is not a problem)
         long finish=System.currentTimeMillis();
-        System.out.println("Proof int "+ (finish-start)+" ms");
-        RangePredicateToken tokenInt3=prover.generateRangePredicateToken(baseInt,intValue,definitionInt,predInt3);
+        RangePredicateToken tokenInt3=prover.generateRangePredicateToken(baseInt,intValue,definitionInt,predInt3, "context");
         Attribute dateValue=new Attribute(Util.fromRFC3339UTC("1990-06-04T00:00:01"));
         Predicate predDate1=new Predicate(definitionDate.getId(),Operation.GREATERTHANOREQUAL,new Attribute(Util.fromRFC3339UTC("1971-06-04T00:00:01")));
         Predicate predDate2=new Predicate(definitionDate.getId(),Operation.LESSTHANOREQUAL,new Attribute(Util.fromRFC3339UTC("1996-05-01T00:00:01")));
@@ -54,24 +53,22 @@ public class TestRangeProofs {
                     new Attribute(Util.fromRFC3339UTC("1990-05-03T00:00:01")),new Attribute(Util.fromRFC3339UTC("1990-07-05T00:00:01")));
         PedersenBase baseDate=generateTestPedersenBase(builder);
         start=System.currentTimeMillis();
-        RangePredicateToken tokenDate1=prover.generateRangePredicateToken(baseDate,dateValue,definitionDate,predDate1);
+        RangePredicateToken tokenDate1=prover.generateRangePredicateToken(baseDate,dateValue,definitionDate,predDate1, "context");
         finish=System.currentTimeMillis();
-        System.out.println("Proof date "+ (finish-start)+" ms");
-        RangePredicateToken tokenDate2=prover.generateRangePredicateToken(baseDate,dateValue,definitionDate,predDate2);
-        RangePredicateToken tokenDate3=prover.generateRangePredicateToken(baseDate,dateValue,definitionDate,predDate3);
+        RangePredicateToken tokenDate2=prover.generateRangePredicateToken(baseDate,dateValue,definitionDate,predDate2, "context");
+        RangePredicateToken tokenDate3=prover.generateRangePredicateToken(baseDate,dateValue,definitionDate,predDate3, "context");
         RangeVerifier verifier=new RangeVerifier(messageSalt,builder);
         start=System.currentTimeMillis();
-        assertThat(verifier.verifyRangePredicate(baseInt,tokenInt1,definitionInt,predInt1),is(RangePredicateVerificationResult.VALID));
+        assertThat(verifier.verifyRangePredicate(baseInt,tokenInt1,definitionInt,predInt1, "context"),is(RangePredicateVerificationResult.VALID));
+        assertThat(verifier.verifyRangePredicate(baseInt,tokenInt1,definitionInt,predInt1, "fake-context"),is(RangePredicateVerificationResult.INVALID));
         finish=System.currentTimeMillis();
-        System.out.println("Verf int "+ (finish-start)+" ms");
-        assertThat(verifier.verifyRangePredicate(baseInt,tokenInt2,definitionInt,predInt2),is(RangePredicateVerificationResult.VALID));
-        assertThat(verifier.verifyRangePredicate(baseInt,tokenInt3,definitionInt,predInt3),is(RangePredicateVerificationResult.VALID));
+        assertThat(verifier.verifyRangePredicate(baseInt,tokenInt2,definitionInt,predInt2, "context"),is(RangePredicateVerificationResult.VALID));
+        assertThat(verifier.verifyRangePredicate(baseInt,tokenInt3,definitionInt,predInt3, "context"),is(RangePredicateVerificationResult.VALID));
         start=System.currentTimeMillis();
-        assertThat(verifier.verifyRangePredicate(baseDate,tokenDate1,definitionDate,predDate1),is(RangePredicateVerificationResult.VALID));
+        assertThat(verifier.verifyRangePredicate(baseDate,tokenDate1,definitionDate,predDate1, "context"),is(RangePredicateVerificationResult.VALID));
         finish=System.currentTimeMillis();
-        System.out.println("Verf date "+ (finish-start)+" ms");
-        assertThat(verifier.verifyRangePredicate(baseDate,tokenDate2,definitionDate,predDate2),is(RangePredicateVerificationResult.VALID));
-        assertThat(verifier.verifyRangePredicate(baseDate,tokenDate3,definitionDate,predDate3),is(RangePredicateVerificationResult.VALID));
+        assertThat(verifier.verifyRangePredicate(baseDate,tokenDate2,definitionDate,predDate2, "context"),is(RangePredicateVerificationResult.VALID));
+        assertThat(verifier.verifyRangePredicate(baseDate,tokenDate3,definitionDate,predDate3, "context"),is(RangePredicateVerificationResult.VALID));
     }
 
     @Test
@@ -86,27 +83,27 @@ public class TestRangeProofs {
         Predicate predInt3=new Predicate(definitionInt.getId(),Operation.INRANGE,new Attribute(4),new Attribute(8));
         Predicate predInt4=new Predicate(definitionInt.getId(),Operation.INRANGE,new Attribute(12),new Attribute(16));
         PedersenBase baseInt=generateTestPedersenBase(builder);
-        RangePredicateToken tokenInt1=prover.generateRangePredicateToken(baseInt,intValue,definitionInt,predInt1);
-        RangePredicateToken tokenInt2=prover.generateRangePredicateToken(baseInt,intValue,definitionInt,predInt2); // Commitment Map will not work well (though for this case it is not a problem)
-        RangePredicateToken tokenInt3=prover.generateRangePredicateToken(baseInt,intValue,definitionInt,predInt3);
-        RangePredicateToken tokenInt4=prover.generateRangePredicateToken(baseInt,intValue,definitionInt,predInt4);
+        RangePredicateToken tokenInt1=prover.generateRangePredicateToken(baseInt,intValue,definitionInt,predInt1, "context");
+        RangePredicateToken tokenInt2=prover.generateRangePredicateToken(baseInt,intValue,definitionInt,predInt2, "context"); // Commitment Map will not work well (though for this case it is not a problem)
+        RangePredicateToken tokenInt3=prover.generateRangePredicateToken(baseInt,intValue,definitionInt,predInt3, "context");
+        RangePredicateToken tokenInt4=prover.generateRangePredicateToken(baseInt,intValue,definitionInt,predInt4, "context");
         Attribute dateValue=new Attribute(Util.fromRFC3339UTC("1990-06-04T00:00:01"));
         Predicate predDate1=new Predicate(definitionDate.getId(),Operation.GREATERTHANOREQUAL,new Attribute(Util.fromRFC3339UTC("1991-06-04T00:00:01")));
         Predicate predDate2=new Predicate(definitionDate.getId(),Operation.LESSTHANOREQUAL,new Attribute(Util.fromRFC3339UTC("1986-05-01T00:00:01")));
         Predicate predDate3=new Predicate(definitionDate.getId(),Operation.INRANGE,
                 new Attribute(Util.fromRFC3339UTC("1990-06-02T00:00:01")),new Attribute(Util.fromRFC3339UTC("1990-06-03T00:00:01")));
         PedersenBase baseDate=generateTestPedersenBase(builder);
-        RangePredicateToken tokenDate1=prover.generateRangePredicateToken(baseDate,dateValue,definitionDate,predDate1);
-        RangePredicateToken tokenDate2=prover.generateRangePredicateToken(baseDate,dateValue,definitionDate,predDate2);
-        RangePredicateToken tokenDate3=prover.generateRangePredicateToken(baseDate,dateValue,definitionDate,predDate3);
+        RangePredicateToken tokenDate1=prover.generateRangePredicateToken(baseDate,dateValue,definitionDate,predDate1, "context");
+        RangePredicateToken tokenDate2=prover.generateRangePredicateToken(baseDate,dateValue,definitionDate,predDate2, "context");
+        RangePredicateToken tokenDate3=prover.generateRangePredicateToken(baseDate,dateValue,definitionDate,predDate3, "context");
         RangeVerifier verifier=new RangeVerifier(messageSalt,builder);
-        assertThat(verifier.verifyRangePredicate(baseInt,tokenInt1,definitionInt,predInt1),is(RangePredicateVerificationResult.INVALID));
-        assertThat(verifier.verifyRangePredicate(baseInt,tokenInt2,definitionInt,predInt2),is(RangePredicateVerificationResult.INVALID));
-        assertThat(verifier.verifyRangePredicate(baseInt,tokenInt3,definitionInt,predInt3),is(RangePredicateVerificationResult.INVALID));
-        assertThat(verifier.verifyRangePredicate(baseInt,tokenInt4,definitionInt,predInt4),is(RangePredicateVerificationResult.INVALID));
-        assertThat(verifier.verifyRangePredicate(baseDate,tokenDate1,definitionDate,predDate1),is(RangePredicateVerificationResult.INVALID));
-        assertThat(verifier.verifyRangePredicate(baseDate,tokenDate2,definitionDate,predDate2),is(RangePredicateVerificationResult.INVALID));
-        assertThat(verifier.verifyRangePredicate(baseDate,tokenDate3,definitionDate,predDate3),is(RangePredicateVerificationResult.INVALID));
+        assertThat(verifier.verifyRangePredicate(baseInt,tokenInt1,definitionInt,predInt1, "context"),is(RangePredicateVerificationResult.INVALID));
+        assertThat(verifier.verifyRangePredicate(baseInt,tokenInt2,definitionInt,predInt2, "context"),is(RangePredicateVerificationResult.INVALID));
+        assertThat(verifier.verifyRangePredicate(baseInt,tokenInt3,definitionInt,predInt3, "context"),is(RangePredicateVerificationResult.INVALID));
+        assertThat(verifier.verifyRangePredicate(baseInt,tokenInt4,definitionInt,predInt4, "context"),is(RangePredicateVerificationResult.INVALID));
+        assertThat(verifier.verifyRangePredicate(baseDate,tokenDate1,definitionDate,predDate1, "context"),is(RangePredicateVerificationResult.INVALID));
+        assertThat(verifier.verifyRangePredicate(baseDate,tokenDate2,definitionDate,predDate2, "context"),is(RangePredicateVerificationResult.INVALID));
+        assertThat(verifier.verifyRangePredicate(baseDate,tokenDate3,definitionDate,predDate3, "context"),is(RangePredicateVerificationResult.INVALID));
     }
 
 
@@ -132,52 +129,52 @@ public class TestRangeProofs {
                 new Attribute(Util.fromRFC3339UTC("1996-06-02T00:00:01")),new Attribute(Util.fromRFC3339UTC("1990-06-03T00:00:01")));
         PedersenBase base=generateTestPedersenBase(builder);
         try {
-            prover.generateRangePredicateToken(base,intValue,definitionString,predInt1);
+            prover.generateRangePredicateToken(base,intValue,definitionString,predInt1, "context");
             fail("Should throw IllegalArgumentException: wrong Attribute def");
         }catch (IllegalArgumentException e){
         }
         try {
-            prover.generateRangePredicateToken(base,intValue,definitionInt,wrongPred);
+            prover.generateRangePredicateToken(base,intValue,definitionInt,wrongPred, "context");
             fail("Should throw IllegalArgumentException: wrong Predicate");
         }catch (IllegalArgumentException e){
         }
         try {
-            prover.generateRangePredicateToken(base,intValue,definitionInt,wrongPred2);
+            prover.generateRangePredicateToken(base,intValue,definitionInt,wrongPred2, "context");
             fail("Should throw IllegalArgumentException: wrong Predicate");
         }catch (IllegalArgumentException e){
         }
         try {
-            prover.generateRangePredicateToken(base,intValue,definitionInt,wrongPredNull1);
+            prover.generateRangePredicateToken(base,intValue,definitionInt,wrongPredNull1, "context");
             fail("Should throw IllegalArgumentException: wrong Predicate null value");
         }catch (IllegalArgumentException e){
         }
         try {
-            prover.generateRangePredicateToken(base,intValue,definitionInt,wrongPredNull2);
+            prover.generateRangePredicateToken(base,intValue,definitionInt,wrongPredNull2, "context");
             fail("Should throw IllegalArgumentException: wrong Predicate null extra");
         }catch (IllegalArgumentException e){
         }
         try {
-            prover.generateRangePredicateToken(base,dateValue,definitionDate,wrongPredDateType1);
+            prover.generateRangePredicateToken(base,dateValue,definitionDate,wrongPredDateType1, "context");
             fail("Should throw IllegalArgumentException: wrong Predicate type");
         }catch (IllegalArgumentException e){
         }
         try {
-            prover.generateRangePredicateToken(base,dateValue,definitionDate,wrongPredDateType2);
+            prover.generateRangePredicateToken(base,dateValue,definitionDate,wrongPredDateType2, "context");
             fail("Should throw IllegalArgumentException: wrong Predicate type extra");
         }catch (IllegalArgumentException e){
         }
         try {
-            prover.generateRangePredicateToken(base,dateValue,definitionInt,predInt1);
+            prover.generateRangePredicateToken(base,dateValue,definitionInt,predInt1, "context");
             fail("Should throw IllegalArgumentException: wrong Attribute value type");
         }catch (IllegalArgumentException e){
         }
         try {
-            prover.generateRangePredicateToken(base,dateValue,definitionDate,wrongPredDateRange);
+            prover.generateRangePredicateToken(base,dateValue,definitionDate,wrongPredDateRange, "context");
             fail("Should throw IllegalArgumentException: wrong Predicate range date");
         }catch (IllegalArgumentException e){
         }
         try {
-            prover.generateRangePredicateToken(base,intValue,definitionInt,wrongPredIntRange);
+            prover.generateRangePredicateToken(base,intValue,definitionInt,wrongPredIntRange, "context");
             fail("Should throw IllegalArgumentException: wrong Predicate range int");
         }catch (IllegalArgumentException e){
         }
@@ -202,47 +199,47 @@ public class TestRangeProofs {
         AttributeDefinition wrongDef=new AttributeDefinitionString(definitionInt.getId(),"name",0,6);
         PedersenBase base=generateTestPedersenBase(builder);
         try {
-            verifier.verifyRangePredicate(base,new RangePredicateToken(null,null,null),wrongDef,predInt1);
+            verifier.verifyRangePredicate(base,new RangePredicateToken(null,null,null),wrongDef,predInt1, "context");
             fail("Should throw IllegalArgumentException: wrong Attribute def");
         }catch (IllegalArgumentException e){
         }
         try {
-            verifier.verifyRangePredicate(base,new RangePredicateToken(null,null,null),definitionInt,wrongPred);
+            verifier.verifyRangePredicate(base,new RangePredicateToken(null,null,null),definitionInt,wrongPred, "context");
             fail("Should throw IllegalArgumentException: wrong Predicate");
         }catch (IllegalArgumentException e){
         }
         try {
-            verifier.verifyRangePredicate(base,new RangePredicateToken(null,null,null),definitionInt,wrongPred2);
+            verifier.verifyRangePredicate(base,new RangePredicateToken(null,null,null),definitionInt,wrongPred2, "context");
             fail("Should throw IllegalArgumentException: wrong Predicate");
         }catch (IllegalArgumentException e){
         }
         try {
-            verifier.verifyRangePredicate(base,new RangePredicateToken(null,null,null),definitionInt,wrongPredNull1);
+            verifier.verifyRangePredicate(base,new RangePredicateToken(null,null,null),definitionInt,wrongPredNull1, "context");
             fail("Should throw IllegalArgumentException: wrong Predicate null value");
         }catch (IllegalArgumentException e){
         }
         try {
-            verifier.verifyRangePredicate(base,new RangePredicateToken(null,null,null),definitionInt,wrongPredNull2);
+            verifier.verifyRangePredicate(base,new RangePredicateToken(null,null,null),definitionInt,wrongPredNull2, "context");
             fail("Should throw IllegalArgumentException: wrong Predicate null extra");
         }catch (IllegalArgumentException e){
         }
         try {
-            verifier.verifyRangePredicate(base,new RangePredicateToken(null,null,null),definitionDate,wrongPredDateType1);
+            verifier.verifyRangePredicate(base,new RangePredicateToken(null,null,null),definitionDate,wrongPredDateType1, "context");
             fail("Should throw IllegalArgumentException: wrong Predicate type");
         }catch (IllegalArgumentException e){
         }
         try {
-            verifier.verifyRangePredicate(base,new RangePredicateToken(null,null,null),definitionDate,wrongPredDateType2);
+            verifier.verifyRangePredicate(base,new RangePredicateToken(null,null,null),definitionDate,wrongPredDateType2, "context");
             fail("Should throw IllegalArgumentException: wrong Predicate type extra");
         }catch (IllegalArgumentException e){
         }
         try {
-            verifier.verifyRangePredicate(base,new RangePredicateToken(null,null,null),definitionDate,wrongPredDateRange);
+            verifier.verifyRangePredicate(base,new RangePredicateToken(null,null,null),definitionDate,wrongPredDateRange, "context");
             fail("Should throw IllegalArgumentException: wrong Predicate range date");
         }catch (IllegalArgumentException e){
         }
         try {
-            verifier.verifyRangePredicate(base,new RangePredicateToken(null,null,null),definitionInt,wrongPredIntRange);
+            verifier.verifyRangePredicate(base,new RangePredicateToken(null,null,null),definitionInt,wrongPredIntRange, "context");
             fail("Should throw IllegalArgumentException: wrong Predicate range int");
         }catch (IllegalArgumentException e){
         }

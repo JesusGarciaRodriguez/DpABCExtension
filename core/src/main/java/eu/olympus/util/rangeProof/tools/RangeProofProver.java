@@ -19,7 +19,7 @@ public class RangeProofProver {
 
     // n used for proving range [0,2^n-1] is implicit in base length.
     // Number we want to use for the proof, randomness and commitment base are within the witness
-    public RangeProof generateProof(RangeProofBase base, PedersenCommitment witness){
+    public RangeProof generateProof(RangeProofBase base, PedersenCommitment witness, String context){
         int n=base.getG().size();
         if(!((n & (n - 1)) == 0)){
             throw new IllegalArgumentException("Length has to be a power of 2");
@@ -36,8 +36,8 @@ public class RangeProofProver {
         ZpElement rho=builder.getRandomZpElement();
         Group1Element s=ghBase.expMult(ZpVector.concat(sL,sR)).mul(witness.getH().exp(rho));
         ///Group1Element s=base.getG().expMult(sL).mul(base.getH().expMult(sR)).mul(witness.getH().exp(rho));
-        ZpElement y=Utils.newChallenge(witness.getV(),a,s,builder);
-        ZpElement z=Utils.newChallenge(y,a,s,builder);
+        ZpElement y=Utils.newChallenge(witness.getV(),a,s, context, builder);
+        ZpElement z=Utils.newChallenge(y,a,s, context, builder);
         ZpElement zSquared=z.pow(2);
         ZpVector l0=aL.sub(ones.mulScalar(z));
         ZpVector l1=sL;
@@ -55,7 +55,7 @@ public class RangeProofProver {
         ZpElement tau2=builder.getRandomZpElement();
         Group1Element t1Commit=witness.getG().exp(t1).mul(witness.getH().exp(tau1));
         Group1Element t2Commit=witness.getG().exp(t2).mul(witness.getH().exp(tau2));
-        ZpElement x=Utils.newChallenge(z,t1Commit,t2Commit,builder);
+        ZpElement x=Utils.newChallenge(z,t1Commit,t2Commit, context, builder);
         ZpVector l_x=l.eval(x);
         ZpVector r_x=r.eval(x);
         ZpElement tHat=l_x.innerProduct(r_x);
@@ -64,10 +64,10 @@ public class RangeProofProver {
         InnerProductWitness innerProductWitness=new InnerProductWitness(l_x,r_x);
         InnerProductProver iPprover=new InnerProductProver(builder);
         GroupVector hPrime=base.getH().exp(ZpVector.expandExpN(y.inverse(),n,builder));
-        ZpElement uChallenge=Utils.newChallenge(x,tauX,mu,builder);
+        ZpElement uChallenge=Utils.newChallenge(x,tauX,mu, context, builder);
         Group1Element u=witness.getG().exp(uChallenge);
         InnerProductBase innerProductBase=new InnerProductBase(base.getG(),hPrime,u);
-        InnerProductProof innerProductProof=iPprover.generateProof(innerProductBase,innerProductWitness,uChallenge);
+        InnerProductProof innerProductProof=iPprover.generateProof(innerProductBase,innerProductWitness,uChallenge, context);
         return new RangeProof(t1Commit,t2Commit,tauX,mu,tHat,a,s,innerProductProof);
     }
 

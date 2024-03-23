@@ -25,14 +25,15 @@ public class InspectionProver {
 
     /**
      * Generates a token for an inspectable proof, i.e., generates a commitment and an encryption of the identity and a proof that they are correct.
-     * @param base Pedersen base for the proof 
-     * @param value The attribute value of the identity to be encrypted
+     *
+     * @param base                Pedersen base for the proof
+     * @param value               The attribute value of the identity to be encrypted
      * @param attributeDefinition The corresponding attribute definition. It has to be "numerical" (Integer or Date)
-     * @param inspectionPK public key of the inspection scheme to be used for encryption
+     * @param inspectionPK        public key of the inspection scheme to be used for encryption
+     * @param context
      * @return
      */
-    public Pair<InspectionPredicateToken,PedersenCommitment> generateInspectionPredicateToken(PedersenBase base, Attribute value, AttributeDefinition attributeDefinition, ElGamalKey inspectionPK){
-    	//TODO: Any sanity checks to be performed?? May ID needs to be integer?
+    public Pair<InspectionPredicateToken,PedersenCommitment> generateInspectionPredicateToken(PedersenBase base, Attribute value, AttributeDefinition attributeDefinition, ElGamalKey inspectionPK, String context){
         //System.err.println("Inspection prover");
         ZpElement id    = builder.getZpElementFromAttribute(value,attributeDefinition);
     	ZpElement Rid   = builder.getRandomZpElement();
@@ -50,8 +51,7 @@ public class InspectionProver {
         PedersenCommitment t_V = new PedersenCommitment(base.getG(),base.getH(), Rid, Ropen);     
     	ElGamalCiphertext  t_E = new ElGamalEncryption(inspectionPK, inspectionPK.getBase().exp(Rid), Rrand).getCiphertext();  
  
-    	//TODO: I guess we should also include the bases of the commitment and the public key here to avoid ambiguity? Makes sense, yes
-		ZpElement c = newChallenge(V.getV(), E, t_V.getV(), t_E, builder);
+		ZpElement c = newChallenge(V.getV(), E, t_V.getV(), t_E, context, builder );
 
     	// S_id = R_id + c*id
     	ZpElement Sid   = Rid.add(id.mul(c));

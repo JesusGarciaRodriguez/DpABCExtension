@@ -229,7 +229,7 @@ public class TestAlgebraicOperations {
         for(int i=0;i<length;i++)
             for(int j=0;j<length;j++)
                 for(int k=0;k<length;k++)
-                    hashes[i][j][k]= Utils.newChallenge(z[i],l[j],r[k],builder);
+                    hashes[i][j][k]= Utils.newChallenge(z[i],l[j],r[k], "context", builder);
         for(int a=0;a<length;a++)
             for(int i=0;i<length;i++)
                 for(int j=0;j<length;j++)

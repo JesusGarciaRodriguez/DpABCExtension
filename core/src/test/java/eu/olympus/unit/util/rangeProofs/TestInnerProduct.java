@@ -35,9 +35,9 @@ public class TestInnerProduct {
         InnerProductWitness witness=generateTestWitness(builder);
         ZpElement c=witness.getA().innerProduct(witness.getB());
         Group1Element p=base.getG().expMult(witness.getA()).mul(base.getH().expMult(witness.getB())).mul(base.getU().exp(c));
-        InnerProductProof proof=prover.generateProof(base,witness,salt);
+        InnerProductProof proof=prover.generateProof(base,witness,salt, "context");
         InnerProductVerifier verifier=new InnerProductVerifier(builder);
-        assertThat(verifier.verify(base,p,proof,salt),is(true));
+        assertThat(verifier.verify(base,p,proof,salt, "context"),is(true));
     }
 
     @Test
@@ -49,9 +49,9 @@ public class TestInnerProduct {
         InnerProductWitness witness=generateTestWitness(builder);
         ZpElement c=witness.getA().innerProduct(witness.getB());
         Group1Element p=base.getG().expMult(witness.getA()).mul(base.getH().expMult(witness.getB())).mul(base.getU().exp(c));
-        InnerProductProof proof=prover.generateProof(base,witness,null);
+        InnerProductProof proof=prover.generateProof(base,witness,null, "context");
         InnerProductVerifier verifier=new InnerProductVerifier(builder);
-        assertThat(verifier.verify(base,p,proof,null),is(true));
+        assertThat(verifier.verify(base,p,proof,null, "context"),is(true));
     }
 
     @Test
@@ -71,16 +71,16 @@ public class TestInnerProduct {
         Group1Element wrongP5=base.getG().expScalar(new ZpElementBLS461(new BIG(2))).expMult(witness.getA()).mul(base.getH().expMult(witness.getB())).mul(base.getU().exp(c));
         Group1Element wrongP6=base.getG().expMult(witness.getA()).mul(base.getH().expScalar(new ZpElementBLS461(new BIG(2))).expMult(witness.getB())).mul(base.getU().exp(c));
         Group1Element wrongP7=base.getG().expMult(witness.getA()).mul(base.getH().expMult(witness.getB())).mul(base.getU().exp(new ZpElementBLS461(new BIG(2))).exp(c));
-        InnerProductProof proof=prover.generateProof(base,witness,null);
+        InnerProductProof proof=prover.generateProof(base,witness,null, "context");
         InnerProductVerifier verifier=new InnerProductVerifier(builder);
-        assertThat(verifier.verify(base,p,proof,null),is(true));
-        assertThat(verifier.verify(base,wrongP1,proof,null),is(false));
-        assertThat(verifier.verify(base,wrongP2,proof,null),is(false));
-        assertThat(verifier.verify(base,wrongP3,proof,null),is(false));
-        assertThat(verifier.verify(base,wrongP4,proof,null),is(false));
-        assertThat(verifier.verify(base,wrongP5,proof,null),is(false));
-        assertThat(verifier.verify(base,wrongP6,proof,null),is(false));
-        assertThat(verifier.verify(base,wrongP7,proof,null),is(false));
+        assertThat(verifier.verify(base,p,proof,null, "context"),is(true));
+        assertThat(verifier.verify(base,wrongP1,proof,null, "context"),is(false));
+        assertThat(verifier.verify(base,wrongP2,proof,null, "context"),is(false));
+        assertThat(verifier.verify(base,wrongP3,proof,null, "context"),is(false));
+        assertThat(verifier.verify(base,wrongP4,proof,null, "context"),is(false));
+        assertThat(verifier.verify(base,wrongP5,proof,null, "context"),is(false));
+        assertThat(verifier.verify(base,wrongP6,proof,null, "context"),is(false));
+        assertThat(verifier.verify(base,wrongP7,proof,null, "context"),is(false));
     }
 
     @Test
@@ -92,7 +92,7 @@ public class TestInnerProduct {
         InnerProductWitness witness=generateTestWitness(builder);
         ZpElement c=witness.getA().innerProduct(witness.getB());
         Group1Element p=base.getG().expMult(witness.getA()).mul(base.getH().expMult(witness.getB())).mul(base.getU().exp(c));
-        InnerProductProof proof=prover.generateProof(base,witness,null);
+        InnerProductProof proof=prover.generateProof(base,witness,null, "context");
         InnerProductProof wrongProof1=new InnerProductProof(proof.getL(),proof.getR(),proof.getA(),proof.getB().add(builder.getRandomZpElement()));
         InnerProductProof wrongProof2=new InnerProductProof(proof.getL(),proof.getR(),proof.getA().add(builder.getRandomZpElement()),proof.getB());
         InnerProductProof wrongProof3=new InnerProductProof(proof.getR(),proof.getL(),proof.getA(),proof.getB());
@@ -105,12 +105,12 @@ public class TestInnerProduct {
         wrongL2.remove(0);
         InnerProductProof wrongProof5=new InnerProductProof(wrongL2,wrongR2,proof.getA(),proof.getB());
         InnerProductVerifier verifier=new InnerProductVerifier(builder);
-        assertThat(verifier.verify(base,p,proof,null),is(true));
-        assertThat(verifier.verify(base,p,wrongProof1,null),is(false));
-        assertThat(verifier.verify(base,p,wrongProof2,null),is(false));
-        assertThat(verifier.verify(base,p,wrongProof3,null),is(false));
-        assertThat(verifier.verify(base,p,wrongProof4,null),is(false));
-        assertThat(verifier.verify(base,p,wrongProof5,null),is(false));
+        assertThat(verifier.verify(base,p,proof,null, "context"),is(true));
+        assertThat(verifier.verify(base,p,wrongProof1,null, "context"),is(false));
+        assertThat(verifier.verify(base,p,wrongProof2,null, "context"),is(false));
+        assertThat(verifier.verify(base,p,wrongProof3,null, "context"),is(false));
+        assertThat(verifier.verify(base,p,wrongProof4,null, "context"),is(false));
+        assertThat(verifier.verify(base,p,wrongProof5,null, "context"),is(false));
     }
 
     @Test
@@ -134,14 +134,14 @@ public class TestInnerProduct {
             for(int j=0;j<2;j++){
                 ZpElement c=witnesses[i].getA().innerProduct(witnesses[i].getB());
                 ps[count]=bases[j].getG().expMult(witnesses[i].getA()).mul(bases[j].getH().expMult(witnesses[i].getB())).mul(bases[j].getU().exp(c));
-                proofs[count]=prover.generateProof(bases[j],witnesses[i],null);
+                proofs[count]=prover.generateProof(bases[j],witnesses[i],null, "context");
                 count++;
             }
         for(int i=0;i<4;i++){
             for(int j=0;j<4;j++){
                 if(j!=i){ //Proof and p do not match
-                    assertThat(verifier.verify(bases[0],ps[i],proofs[j],null),is(false));
-                    assertThat(verifier.verify(bases[1],ps[i],proofs[j],null),is(false));
+                    assertThat(verifier.verify(bases[0],ps[i],proofs[j],null, "context"),is(false));
+                    assertThat(verifier.verify(bases[1],ps[i],proofs[j],null, "context"),is(false));
                 }
             }
         }
@@ -183,12 +183,12 @@ public class TestInnerProduct {
         InnerProductWitness witness=generateTestWitness(builder);
         ZpElement c=witness.getA().innerProduct(witness.getB());
         Group1Element p=base.getG().expMult(witness.getA()).mul(base.getH().expMult(witness.getB())).mul(base.getU().exp(c));
-        InnerProductProof proof=prover.generateProof(base,witness,salt);
+        InnerProductProof proof=prover.generateProof(base,witness,salt, "context");
         InnerProductVerifier verifier=new InnerProductVerifier(builder);
         GroupVector wrongG=new GroupVector(p,p,p);
         GroupVector wrongH=new GroupVector(p,p,p);
         InnerProductBase wrongBase=new InnerProductBase(wrongG,wrongH,base.getU());
-        assertThat(verifier.verify(wrongBase,p,proof,salt),is(false));
+        assertThat(verifier.verify(wrongBase,p,proof,salt, "context"),is(false));
     }
     //-------- Exceptions ---------
     @Test
@@ -217,14 +217,14 @@ public class TestInnerProduct {
         try{
             InnerProductBase base=new InnerProductBase(v1Element,v1Element,g);
             InnerProductWitness witness=new InnerProductWitness(z2Elements,z2Elements);
-            prover.generateProof(base,witness,null);
+            prover.generateProof(base,witness,null, "context");
             fail("InnerProductProver should fail wrong lengths");
         }catch (IllegalArgumentException e){
         }
         try{
             InnerProductBase base=new InnerProductBase(v3Elements,v3Elements,g);
             InnerProductWitness witness=new InnerProductWitness(z3Elements,z3Elements);
-            prover.generateProof(base,witness,null);
+            prover.generateProof(base,witness,null, "context");
             fail("InnerProductProver should fail not power of 2");
         }catch (IllegalArgumentException e){
         }

@@ -35,12 +35,11 @@ import eu.olympus.util.model.PedersenBase;
 import eu.olympus.util.model.PedersenCommitment;
 import eu.olympus.util.revocation.RevocationPredicateToken;
 import eu.olympus.util.revocation.RevocationProver;
-
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-//TODO For exceptions, add at least three types: SetupException, PolicyUnfulfilledException, TokenGenerationException (for when combination fails)
+// For exceptions, add at least three types: SetupException, PolicyUnfulfilledException, TokenGenerationException (for when combination fails)
 public class PSCredentialManagement implements CredentialManagement {
 
 	private CredentialStorage credentialStorage;
@@ -86,7 +85,7 @@ public class PSCredentialManagement implements CredentialManagement {
 		MSverfKey[] verificationKeySharesArray = new MSverfKey[servers.size()];
 		verfKeysIdPs=new HashMap<>();
 		for (int i = 0; i < servers.size(); i++) {
-			verificationKeySharesArray[i] = servers.get(i).getPabcPublicKeyShare(); //TODO Concurrent
+			verificationKeySharesArray[i] = servers.get(i).getPabcPublicKeyShare();
 			verfKeysIdPs.put(i,verificationKeySharesArray[i]);
 		}
 		this.olympusVerificationKey = multiSignatureScheme.kAggreg(verificationKeySharesArray);
@@ -317,6 +316,7 @@ public class PSCredentialManagement implements CredentialManagement {
             throw new PolicyUnfulfilledException("Could not satisfy policy: credential does not contain every requested attribute for range predicate");
         if (attributesForRange.size() != rangePredicates.size())
             throw new PolicyUnfulfilledException("Repeated attribute ID in different range predicates");
+		String context=policy.generateZkContext();
         Map<String, Attribute> revealedAttributes = temporalCredential.getAttributes().entrySet().stream()
                 .filter(e -> attributesToReveal.contains(e.getKey()))
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
@@ -325,7 +325,7 @@ public class PSCredentialManagement implements CredentialManagement {
      // check that no revocation is happening ...
         if (rangePredicates.isEmpty() && inspectionPredicate == null && revocationPredicate == null && pseudonymPredicate==null) {
             MSzkToken token = multiSignatureScheme.presentZKtoken(olympusVerificationKey, attributesToReveal,
-                    signedAttributes, policy.getPolicyId(), temporalCredential.getSignature());
+                    signedAttributes, context, temporalCredential.getSignature());
             return new PresentationToken(temporalCredential.getEpoch(), revealedAttributes, token, null, null, null,null);
         } else {
         	Map<String, PedersenCommitment> commitments = new HashMap<>();
@@ -338,23 +338,26 @@ public class PSCredentialManagement implements CredentialManagement {
             //if there are range predicates ...
         	if (!rangePredicates.isEmpty()) {
 	        	rangePredicateTokenMap = new HashMap<>();
-	            RangeProver prover = new RangeProver(policy.getPolicyId(), builder);
+	            RangeProver prover = new RangeProver(context, builder);
 	            for (Predicate p : rangePredicates) {
 	//We know definitions/keys are present because we checked that the attribute is in the credential (only those that are "defined" would be included in a cred)
 	                String attrId = p.getAttributeName().toLowerCase();
 	                AttributeDefinition definition = attrDefMap.get(attrId);
 	                PedersenBase base = new PedersenBase(key.getVY().get(attrId), key.getVX()); //Base has to be g=Y_j h=X
-	                rangePredicateTokenMap.put(attrId, prover.generateRangePredicateToken(base, temporalCredential.getElement(attrId), definition, p));
+	                rangePredicateTokenMap.put(attrId, prover.generateRangePredicateToken(base, temporalCredential.getElement(attrId), definition, p, context));
 	            }
 	            commitments.putAll(prover.getGeneratedCommitments());
         	}
             //if we have inspection ...
             if (inspectionPredicate != null) {
+				if(inspectionKey==null){
+					throw new PolicyUnfulfilledException("Cannot do Inspection predicate without setup of inspection key");
+				}
                 String attrId = inspectionPredicate.getAttributeName().toLowerCase();
                 AttributeDefinition definition = attrDefMap.get(attrId);
             	InspectionProver inspectionProver = new InspectionProver(builder);
                 PedersenBase base = new PedersenBase(key.getVY().get(attrId), key.getVX()); //Base has to be g=Y_j h=X
-                Pair<InspectionPredicateToken,PedersenCommitment> inspectionPredicateProof = inspectionProver.generateInspectionPredicateToken(base, temporalCredential.getElement(attrId), definition, inspectionKey);
+                Pair<InspectionPredicateToken,PedersenCommitment> inspectionPredicateProof = inspectionProver.generateInspectionPredicateToken(base, temporalCredential.getElement(attrId), definition, inspectionKey, context);
                 inspectionPredicateToken = inspectionPredicateProof.getFirst();
                 commitments.put(attrId, inspectionPredicateProof.getSecond());
             }
@@ -369,7 +372,7 @@ public class PSCredentialManagement implements CredentialManagement {
 				PseudonymProver pseudonymProver=new PseudonymProver(builder);
 				PedersenBase base = new PedersenBase(key.getVY().get(attrId), key.getVX()); //Base has to be g=Y_j h=X
 				Pair<PseudonymPredicateToken,PedersenCommitment> pseudonymPredicateProof =
-						pseudonymProver.generatePseudonymPredicateToken(base, temporalCredential.getElement(attrId), definition, (String) scope);
+						pseudonymProver.generatePseudonymPredicateToken(base, temporalCredential.getElement(attrId), definition, (String) scope, context);
 				pseudonymPredicateToken=pseudonymPredicateProof.getFirst();
 				commitments.put(attrId, pseudonymPredicateProof.getSecond());
 			}
@@ -391,7 +394,7 @@ public class PSCredentialManagement implements CredentialManagement {
 				}
 				PedersenBase base = new PedersenBase(key.getVY().get(attrId), key.getVX()); //Base has to be g=Y_j h=X
                 
-                Pair<RevocationPredicateToken,PedersenCommitment> revocationPredicateProof = revocationProver.generateRevocationPredicateToken(base, definition,revocationCredential, revocationVerfKey, policy.getPolicyId());
+                Pair<RevocationPredicateToken,PedersenCommitment> revocationPredicateProof = revocationProver.generateRevocationPredicateToken(base, definition,revocationCredential, revocationVerfKey, context);
                 
                 revocationPredicateToken = revocationPredicateProof.getFirst();
                 commitments.put(attrId, revocationPredicateProof.getSecond());
@@ -399,7 +402,7 @@ public class PSCredentialManagement implements CredentialManagement {
             }
             
             MSzkToken token = multiSignatureScheme.presentZKtokenModified(olympusVerificationKey, attributesToReveal,
-                    commitments, signedAttributes, policy.getPolicyId(), temporalCredential.getSignature());
+                    commitments, signedAttributes, context, temporalCredential.getSignature());
             return new PresentationToken(temporalCredential.getEpoch(), revealedAttributes, token, rangePredicateTokenMap, inspectionPredicateToken, revocationPredicateToken,pseudonymPredicateToken);
         }
     }

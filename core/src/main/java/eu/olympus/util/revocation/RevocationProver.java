@@ -4,8 +4,6 @@ import eu.olympus.model.*;
 import eu.olympus.model.exceptions.MSSetupException;
 import eu.olympus.model.exceptions.SetupException;
 import eu.olympus.util.Pair;
-import eu.olympus.util.inspection.model.ElGamalCiphertext;
-import eu.olympus.util.inspection.model.ElGamalEncryption;
 import eu.olympus.util.multisign.MS;
 import eu.olympus.util.multisign.MSmessage;
 import eu.olympus.util.multisign.MSsignature;
@@ -56,10 +54,12 @@ public class RevocationProver {
     }
     /**
      * Generates a token for an inspectable proof, i.e., generates a commitment and an encryption of the identity and a proof that they are correct.
+     *
      * @param TODO
+     * @param context
      * @return
      */
-    public Pair<RevocationPredicateToken,PedersenCommitment> generateRevocationPredicateToken(PedersenBase base, AttributeDefinition rhDefinition, PSCredential revocationCredential, MSverfKey revocationVerfKey, String policyID){
+    public Pair<RevocationPredicateToken,PedersenCommitment> generateRevocationPredicateToken(PedersenBase base, AttributeDefinition rhDefinition, PSCredential revocationCredential, MSverfKey revocationVerfKey, String context){
     	Attribute revocationHandle = revocationCredential.getElement(rhDefinition.getId().toLowerCase());
 
     	if (!rhDefinition.checkValidValue(revocationHandle)) {
@@ -107,9 +107,9 @@ public class RevocationProver {
     	// T_RA = commitment (base_RA,r_rh,r_open_RA)
     	// T_issuer = commitment (base_issuer,r_rh,r_open_issuer)
         PedersenCommitment T_RA     = new PedersenCommitment(base_RA.getG(), base_RA.getH(), R_rh, R_open_RA);
-        PedersenCommitment T_issuer = new PedersenCommitment(base.getG(), base_RA.getH(), R_rh, R_open_issuer);     
+        PedersenCommitment T_issuer = new PedersenCommitment(base.getG(), base.getH(), R_rh, R_open_issuer);
 
-    	ZpElement c = newChallenge(V_RA.getV(), V_issuer.getV(), T_RA.getV(), T_issuer.getV(), base_RA.getG(), base_RA.getH(), base.getG(), base_RA.getH(), revocationVerfKey, builder);
+    	ZpElement c = newChallenge(V_RA.getV(), V_issuer.getV(), T_RA.getV(), T_issuer.getV(), base_RA.getG(), base_RA.getH(), base.getG(), base.getH(), revocationVerfKey, context, builder);
     	
     	
     	ZpElement S_open_RA     = R_open_RA.add(open_RA.mul(c));
@@ -118,7 +118,7 @@ public class RevocationProver {
     	
     	
     	// TODO: add c, S_open_RA, S_open_issuer, S_rh to the token
-    	MSzkToken token = scheme.presentZKtokenModified(revocationVerfKey,revocationAttributesToReveal,commitments_RA, signedAttributes, policyID, revocationSignature);
+    	MSzkToken token = scheme.presentZKtokenModified(revocationVerfKey,revocationAttributesToReveal,commitments_RA, signedAttributes, context, revocationSignature);
 
     	RevocationPredicateToken proofToken = new RevocationPredicateToken(V_RA.getV(),V_issuer.getV(),token,S_open_RA,S_open_issuer,S_rh,c,revocationCredential.getEpoch());
             	

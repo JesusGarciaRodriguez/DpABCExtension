@@ -18,17 +18,17 @@ public class InnerProductProver {
         this.builder=builder;
     }
 
-    public InnerProductProof generateProof(InnerProductBase base, InnerProductWitness witness, ZpElement challengeSalt){
+    public InnerProductProof generateProof(InnerProductBase base, InnerProductWitness witness, ZpElement challengeSalt, String context){
         if(base.getG().size()!=witness.getA().size())
             throw new IllegalArgumentException("Base and witness length must be the same");
         if(!((base.getG().size() & (base.getG().size() - 1)) == 0)){
             throw new IllegalArgumentException("Length has to be a power of 2");
         }
         ZpElement salt=challengeSalt!=null ? challengeSalt : builder.getZpElementZero();
-        return recurrentProof(base,witness,new LinkedList<>(),new LinkedList<>(),salt);
+        return recurrentProof(base,witness,new LinkedList<>(),new LinkedList<>(),salt, context);
     }
 
-    private InnerProductProof recurrentProof(InnerProductBase base, InnerProductWitness ab, List<Group1Element> listL, List<Group1Element> listR, ZpElement previousChallenge){
+    private InnerProductProof recurrentProof(InnerProductBase base, InnerProductWitness ab, List<Group1Element> listL, List<Group1Element> listR, ZpElement previousChallenge, String context){
         ZpVector a=ab.getA();
         ZpVector b=ab.getB();
         int n=a.size();
@@ -54,7 +54,7 @@ public class InnerProductProver {
         //Group1Element r=gLeft.expMult(aRight).mul(hRight.expMult(bLeft)).mul(base.getU().exp(cR));
         listL.add(l);
         listR.add(r);
-        ZpElement x=Utils.newChallenge(previousChallenge,l,r,builder);
+        ZpElement x=Utils.newChallenge(previousChallenge,l,r, context, builder);
         ZpElement xInv=x.inverse();
         GroupVector gPrime=gLeft.expScalar(xInv).hadamardProduct(gRight.expScalar(x));
         GroupVector hPrime=hLeft.expScalar(x).hadamardProduct(hRight.expScalar(xInv));
@@ -62,7 +62,7 @@ public class InnerProductProver {
         ZpVector bPrime=bLeft.mulScalar(xInv).add(bRight.mulScalar(x));
         InnerProductBase newBase=new InnerProductBase(gPrime,hPrime,base.getU());
         InnerProductWitness newAB=new InnerProductWitness(aPrime,bPrime);
-        return recurrentProof(newBase,newAB,listL,listR,x);
+        return recurrentProof(newBase,newAB,listL,listR,x, context);
     }
 
 

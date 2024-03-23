@@ -45,9 +45,10 @@ public class RevocationVerifier {
     
     /**
      * @param TODO
+     * @param context
      * @return
      **/
-    public RevocationPredicateVerificationResult verifyRevocationPredicate(PedersenBase base,AttributeDefinition rhDefinition,RevocationPredicateToken token, MSverfKey revocationVerfKey, String policyID, int validEpoch){
+    public RevocationPredicateVerificationResult verifyRevocationPredicate(PedersenBase base, AttributeDefinition rhDefinition, RevocationPredicateToken token, MSverfKey revocationVerfKey, String context, int validEpoch){
         //System.err.println("Revocation verifier");
         if (token.getEpoch()<validEpoch)
             return RevocationPredicateVerificationResult.EXPIRED;
@@ -78,13 +79,13 @@ public class RevocationVerifier {
         // Recompute t_issuer as t_issuer = g_issuer^S_rh * h^S_open_issuer * V_issuer^-c
     	Group1Element t_issuer = base.getG().exp(S_rh).mul(base.getH().exp(S_open_issuer)).mul(V_issuer.invExp(c));
     	// Recompute challenge and check whether it is correct
-    	ZpElement cprime = newChallenge(V_RA, V_issuer, t_RA, t_issuer, base_RA.getG(), base_RA.getH(), base.getG(), base_RA.getH(), revocationVerfKey, builder);
+    	ZpElement cprime = newChallenge(V_RA, V_issuer, t_RA, t_issuer, base_RA.getG(), base_RA.getH(), base.getG(), base.getH(), revocationVerfKey, context, builder);
     	boolean correctC = c.equals(cprime);
     	
         // verify "proof" (under the revocation authority's parameters)
-		boolean verfResult = scheme.verifyZKtokenModified(proof, revocationVerfKey, policyID, revealedAttributesMessage, commitments_RA);
+		boolean verfResult = scheme.verifyZKtokenModified(proof, revocationVerfKey, context, revealedAttributesMessage, commitments_RA);
     	
-		return (correctC & verfResult) ? RevocationPredicateVerificationResult.VALID : RevocationPredicateVerificationResult.INVALID;
+		return (correctC && verfResult) ? RevocationPredicateVerificationResult.VALID : RevocationPredicateVerificationResult.INVALID;
     }
 
 

@@ -38,27 +38,17 @@ import eu.olympus.server.interfaces.Storage;
 import eu.olympus.server.storage.InMemoryPestoDatabase;
 import eu.olympus.unit.util.MockFactory;
 import eu.olympus.util.Pair;
-import eu.olympus.util.multisign.MSauxArg;
-import eu.olympus.util.multisign.MSpublicParam;
-import eu.olympus.util.multisign.MSverfKey;
-import eu.olympus.util.psmultisign.PSauxArg;
-import eu.olympus.util.psmultisign.PSms;
-import eu.olympus.util.psmultisign.PSpublicParam;
+import eu.olympus.util.inspection.model.ElGamalKey;
+import eu.olympus.util.multisign.*;
+import eu.olympus.util.pairingBLS461.PairingBuilderBLS461;
+import eu.olympus.util.pairingInterfaces.PairingBuilder;
+import eu.olympus.util.pairingInterfaces.ZpElement;
+import eu.olympus.util.psmultisign.*;
 import eu.olympus.util.rangeProof.RangePredicateToken;
 import eu.olympus.verifier.PSPABCVerifier;
 import eu.olympus.verifier.VerificationResult;
 import eu.olympus.verifier.interfaces.PABCVerifier;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.junit.Assert;
@@ -67,6 +57,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 public class TestPSmodules {
+	private static final String PAIRING_NAME = "eu.olympus.util.pairingBLS461.PairingBuilderBLS461";
 	@Rule
 	public final ExpectedException exception = ExpectedException.none();
 	
@@ -1401,7 +1392,122 @@ public class TestPSmodules {
 		PresentationToken zkPT3 = credentialClientModule2.generatePresentationToken(policy3);
 		VerificationResult result3=credentialVerifierModule2.verifyPresentationToken(zkPT3.getEncoded(),policy3);
 		assertThat(result3, is(VerificationResult.VALID));
+	}
 
+	@Test
+	public void testCompleteFlowWithAllProofTypes() throws Exception {
+		Set<AttributeDefinition> attributeDefinitions=new HashSet<>();
+		attributeDefinitions.add(new AttributeDefinitionString("name","name",0,16));
+		attributeDefinitions.add(new AttributeDefinitionInteger("age","age",0,123));
+		attributeDefinitions.add(new AttributeDefinitionDate("now","now","1900-01-01T00:00:00","2100-09-01T00:00:00"));
+		attributeDefinitions.add(new AttributeDefinitionInteger("id_inspection_pseudo","id_ip",1,2147483647));
+		attributeDefinitions.add(new AttributeDefinitionInteger("rh","rh",1,2147483647));
+		attributeDefinitions.add(new AttributeDefinitionInteger("income","income",0,100000));
+		attributeDefinitions.add(new AttributeDefinitionInteger("balance","balance",0,10000000));
+		String username="userJoe";
+		PestoDatabase database= new InMemoryPestoDatabase();
+		Map<String, Attribute> userAttr=new HashMap<>();
+		userAttr.put("name", new Attribute("Joe"));
+		userAttr.put("age", new Attribute(21));
+		userAttr.put("now", new Attribute(new Date(System.currentTimeMillis())));
+		userAttr.put("id_inspection_pseudo", new Attribute(10312));
+		userAttr.put("rh", new Attribute(1241254));
+		userAttr.put("income", new Attribute(2000));
+		userAttr.put("balance", new Attribute(40000));
+		PairingBuilder builder=new PairingBuilderBLS461();
+		builder.seedRandom(seed);
+		ElGamalKey inspectionKey=generateTestElGamalKey(builder);
+		Pair<PSverfKey,PSCredential> revocationElements= null;
+		PSverfKey revocationKey = null;
+		PSCredential revocationCredential = null;
+		revocationElements = generateRevocationElements(new AttributeDefinitionInteger("rh","rh",1,2147483647), userAttr.get("rh"),builder,1);
+		revocationKey = revocationElements.getFirst();
+		revocationCredential = revocationElements.getSecond();
+		database.addUser(username,null,1);
+		database.addAttributes(username,userAttr);
+		//Create and credentialGenerator module for each server.
+		Map<Integer,CredentialGenerator> mapServers=new HashMap<>();
+		PabcPublicParameters publicParams=null;
+		for(int i=0;i<nServers; i++){
+			CredentialGenerator credentialServerModule=new ThresholdPSSharesGenerator(database,seed);
+			PABCConfigurationImpl config = new PABCConfigurationImpl();
+			config.setAttrDefinitions(attributeDefinitions);
+			config.setSeed(seed);
+			config.setLifetime(lifetime);
+			config.setAllowedTimeDifference(allowedTimeDifference);
+			config.setServers(Arrays.asList("1", "2"));
+			config.setEncodedInspectionKey(Base64.getEncoder().encodeToString(inspectionKey.getEncoded()));
+			config.setEncodedRevocationKey(Base64.getEncoder().encodeToString(revocationKey.getEncoded()));
+			credentialServerModule.setup(config);
+			mapServers.put(i,credentialServerModule);
+			publicParams=credentialServerModule.getPublicParam();
+		}
+		MSpublicParam schemePublicParam=new PSpublicParam(publicParams.getEncodedSchemePublicParam());
+
+		//Obtain publicKeyShares and aggregatedKey
+		Map<Integer, MSverfKey> verificationKeyShares=new HashMap<>();
+		MSverfKey[] verificationKeys=new MSverfKey[nServers];
+		int i=0;
+		for(Integer id:mapServers.keySet()){
+			MSverfKey key=(MSverfKey)mapServers.get(id).getVerificationKeyShare();
+			verificationKeys[i]=key;
+			verificationKeyShares.put(id,key);
+			i++;
+		}
+		PSms auxSignScheme=new PSms();
+		auxSignScheme.setup(schemePublicParam.getN(),schemePublicParam.getAuxArg(), seed);
+		MSverfKey aggregatedVerificationKey = auxSignScheme.kAggreg(verificationKeys);
+		//Setup client module
+		PSCredentialManagement credentialClientModule= new PSCredentialManagement(true,new InMemoryCredentialStorage());
+		credentialClientModule.setup(publicParams,verificationKeyShares,seed );
+		credentialClientModule.setRevocationCredential(revocationCredential);
+		//Setup verifier module
+		PSPABCVerifier credentialVerifierModule = new PSPABCVerifier();
+		credentialVerifierModule.setup(publicParams,aggregatedVerificationKey,seed );
+
+		//*********Credential creation, proof of policy and verification***********
+		String signedMessage="signedMessage";
+		//Policy creation
+		List<Predicate> predicates = new ArrayList<>();
+		predicates.add(new Predicate("now", Operation.REVEAL, null));
+		predicates.add(new Predicate("age", Operation.GREATERTHANOREQUAL, new Attribute(18)));
+		predicates.add(new Predicate("id_inspection_pseudo", Operation.PSEUDONYM, new Attribute("scope:a")));
+		predicates.add(new Predicate("id_inspection_pseudo", Operation.INSPECTION));
+		predicates.add(new Predicate("rh", Operation.REVOCATION, new Attribute(1)));
+		predicates.add(new Predicate("income", Operation.INRANGE, new Attribute(1000),new Attribute(5000)));
+		predicates.add(new Predicate("balance", Operation.LESSTHANOREQUAL, new Attribute(50000)));
+		Policy policy=new Policy(predicates, signedMessage);
+		//Client receives a credential share from each IdP (simplified) and passes them to the credential manager
+		Map<Integer, PSCredential> credentialShares=new HashMap<>();
+		long timestamp=System.currentTimeMillis();
+		for(Integer id: mapServers.keySet())
+			credentialShares.put(id,mapServers.get(id).createCredentialShare(username,timestamp));
+		PresentationToken zkPT = credentialClientModule.combineAndGeneratePresentationToken(credentialShares, policy);
+		VerificationResult result=credentialVerifierModule.verifyPresentationToken(zkPT.getEncoded(),policy);
+		assertEquals(VerificationResult.VALID, result);
+	}
+
+	private Pair<PSverfKey,PSCredential> generateRevocationElements(AttributeDefinition attrDef, Attribute rh, PairingBuilder builder, int epoch ) throws MSSetupException {
+		//Create credentialGenerator.
+		Set<String> attrNames = new HashSet<>();
+		attrNames.add(attrDef.getId());
+		PSms psScheme = new PSms();
+		MSauxArg auxArg=new PSauxArg(PAIRING_NAME,attrNames);
+		psScheme.setup(1,auxArg, seed);
+		//generate private key
+		Pair<MSprivateKey, MSverfKey> keyPair = psScheme.kg();
+		Map<String, ZpElement> attributesZpValues=new HashMap<>();
+		Map<String,Attribute> attributeValues=new HashMap<>();
+		if(rh!=null && attrDef.checkValidValue(rh)){
+			attributeValues.put(attrDef.getId().toLowerCase(),rh);
+			attributesZpValues.put(attrDef.getId().toLowerCase(),builder.getZpElementFromAttribute(rh,attrDef));
+		}
+		else{ //this branch should not be reached...
+			throw new RuntimeException("Error, should not reach here, as revocation attribute should be found and valid");
+		}
+		MSsignature signature= psScheme.sign(keyPair.getFirst(),new PSmessage(attributesZpValues,builder.getZpElementFromEpoch(epoch)));
+		PSCredential revocationCredential = new PSCredential(epoch,attributeValues,signature);
+		return new Pair<>((PSverfKey)keyPair.getSecond(),revocationCredential);
 	}
 
 	private class MockIdPForSetup extends PabcIdPImpl {
@@ -1415,5 +1521,9 @@ public class TestPSmodules {
 		public PabcPublicParameters getPabcPublicParam() {
 			return pp;
 		}
+	}
+
+	private ElGamalKey generateTestElGamalKey(PairingBuilder builder) {
+		return new ElGamalKey(builder.getGroup1Generator().exp(builder.getRandomZpElement()),builder.getGroup1Generator().exp(builder.getRandomZpElement()));
 	}
 }

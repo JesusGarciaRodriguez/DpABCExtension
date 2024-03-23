@@ -14,6 +14,7 @@ import eu.olympus.util.pairingInterfaces.PairingBuilder;
 import eu.olympus.util.model.PedersenBase;
 import org.junit.Test;
 
+import static eu.olympus.util.inspection.InspectionPredicateVerificationResult.INVALID;
 import static eu.olympus.util.inspection.InspectionPredicateVerificationResult.VALID;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.*;
@@ -32,19 +33,24 @@ public class TestInspectionProofs {
         PedersenBase base=generateTestPedersenBase(builder);
         Attribute id=new Attribute(10312);
         ElGamalKey key=generateTestElGamalKey(builder);
-        Pair<InspectionPredicateToken, PedersenCommitment> result=prover.generateInspectionPredicateToken(base,id,definitionInspectionAttribute,key);
+        Pair<InspectionPredicateToken, PedersenCommitment> result=prover.generateInspectionPredicateToken(base,id,definitionInspectionAttribute,key, "context");
         InspectionVerifier verifier=new InspectionVerifier(builder);
-        assertSame(VALID, verifier.verifyInspectionPredicate(base, key, result.getFirst()));
+        assertSame(VALID, verifier.verifyInspectionPredicate(base, key, result.getFirst(), "context"));
     }
 
 
 
     @Test
     public void testFalseVerification() {
-        String messageSalt="salt";
         PairingBuilder builder=new PairingBuilderBLS461();
         builder.seedRandom(seed);
-        //TODO Try to modify token/key whatever and check that verification fails
+        InspectionProver prover=new InspectionProver(builder);
+        PedersenBase base=generateTestPedersenBase(builder);
+        Attribute id=new Attribute(10312);
+        ElGamalKey key=generateTestElGamalKey(builder);
+        Pair<InspectionPredicateToken, PedersenCommitment> result=prover.generateInspectionPredicateToken(base,id,definitionInspectionAttribute,key, "context");
+        InspectionVerifier verifier=new InspectionVerifier(builder);
+        assertSame(INVALID, verifier.verifyInspectionPredicate(base, key, result.getFirst(), "fake_context"));
     }
 
 

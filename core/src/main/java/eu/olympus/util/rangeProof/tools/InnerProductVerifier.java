@@ -17,7 +17,7 @@ public class InnerProductVerifier {
         this.builder = builder;
     }
 
-    public boolean verify(InnerProductBase base, Group1Element p, InnerProductProof proof, ZpElement challengeSalt){
+    public boolean verify(InnerProductBase base, Group1Element p, InnerProductProof proof, ZpElement challengeSalt, String context){
         ZpElement previousChallenge=challengeSalt!=null ? challengeSalt : builder.getZpElementZero();
         int n=base.getG().size();
         if(!((n & (n - 1)) == 0)){
@@ -35,7 +35,7 @@ public class InnerProductVerifier {
         for(int i=0;i<lsize;i++){
             l[i]=proof.getL().get(i);
             r[i]=proof.getR().get(i);
-            ZpElement x=Utils.newChallenge(previousChallenge,l[i],r[i],builder);
+            ZpElement x=Utils.newChallenge(previousChallenge,l[i],r[i], context, builder);
             ZpElement xInv=x.inverse();
             ZpElement xSquared=x.pow(2);
             ZpElement xInvSquared=xInv.pow(2);

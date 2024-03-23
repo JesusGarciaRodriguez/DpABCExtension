@@ -10,25 +10,28 @@ import static eu.olympus.util.Util.append;
 
 public class Utils {
 
-    public static ZpElement newChallenge(ZpElement previousChallenge, Group1Element l, Group1Element r, PairingBuilder builder) {
+    public static ZpElement newChallenge(ZpElement previousChallenge, Group1Element l, Group1Element r, String context, PairingBuilder builder) {
         byte[] bytes=previousChallenge.toBytes();
         bytes=append(bytes,l.toBytes());
         bytes=append(bytes,r.toBytes());
+        bytes=append(bytes,context.getBytes());
         return builder.hashZpElementFromBytes(bytes);
     }
 
 
-    public static ZpElement newChallenge(ZpElement x, ZpElement tauX, ZpElement mu,PairingBuilder builder) {
+    public static ZpElement newChallenge(ZpElement x, ZpElement tauX, ZpElement mu, String context, PairingBuilder builder) {
         byte[] bytes=x.toBytes();
         bytes=append(bytes,tauX.toBytes());
         bytes=append(bytes,mu.toBytes());
+        bytes=append(bytes,context.getBytes());
         return builder.hashZpElementFromBytes(bytes);
     }
 
-    public static ZpElement newChallenge(Group1Element v, Group1Element a, Group1Element s, PairingBuilder builder) {
+    public static ZpElement newChallenge(Group1Element v, Group1Element a, Group1Element s, String context, PairingBuilder builder) {
         byte[] bytes=v.toBytes();
         bytes=append(bytes,a.toBytes());
         bytes=append(bytes,s.toBytes());
+        bytes=append(bytes,context.getBytes());
         return builder.hashZpElementFromBytes(bytes);
     }
 

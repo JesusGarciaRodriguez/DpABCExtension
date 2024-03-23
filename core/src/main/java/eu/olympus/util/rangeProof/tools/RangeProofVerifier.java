@@ -16,7 +16,7 @@ public class RangeProofVerifier {
         this.builder = builder;
     }
 
-    public boolean verify(RangeProofBase base, PedersenBase commitmentBase, Group1Element v, RangeProof proof){
+    public boolean verify(RangeProofBase base, PedersenBase commitmentBase, Group1Element v, RangeProof proof, String context){
         int n=base.getG().size();
         if(!((n & (n - 1)) == 0)){
             return false;
@@ -29,12 +29,12 @@ public class RangeProofVerifier {
         Group1Element t2commit=proof.getT2();
         ZpElement tauX=proof.getTauX();
         ZpElement mu=proof.getMu();
-        ZpElement y=Utils.newChallenge(v,a,s,builder);
-        ZpElement z=Utils.newChallenge(y,a,s,builder);
+        ZpElement y=Utils.newChallenge(v,a,s, context, builder);
+        ZpElement z=Utils.newChallenge(y,a,s, context, builder);
         ZpElement zSquared=z.pow(2);
-        ZpElement x=Utils.newChallenge(z,t1commit,t2commit,builder);
+        ZpElement x=Utils.newChallenge(z,t1commit,t2commit, context, builder);
         ZpElement xSquared=x.pow(2);
-        ZpElement uChallenge=Utils.newChallenge(x,tauX,mu,builder);
+        ZpElement uChallenge=Utils.newChallenge(x,tauX,mu, context, builder);
         ZpVector ys=ZpVector.expandExpN(y,n,builder);
         ZpElement two=builder.getZpElementOne().add(builder.getZpElementOne());
         ZpVector twos_n=ZpVector.expandExpN(two,n,builder);
@@ -50,6 +50,6 @@ public class RangeProofVerifier {
         InnerProductVerifier iPverifier=new InnerProductVerifier(builder);
         ZpVector hPrimeExponent=ys.mulScalar(z).add(twos_n.mulScalar(zSquared));
         Group1Element p=a.mul(s.exp(x)).mul(base.getG().mulComponents().invExp(z)).mul(hPrime.expMult(hPrimeExponent)).mul(commitmentBase.getH().invExp(mu)).mul(u.exp(proof.gettHat()));
-        return iPverifier.verify(innerProductBase,p,proof.getInnerProductProof(),uChallenge);
+        return iPverifier.verify(innerProductBase,p,proof.getInnerProductProof(),uChallenge, context);
     }
 }
