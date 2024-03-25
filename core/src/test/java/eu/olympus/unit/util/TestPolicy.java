@@ -21,7 +21,7 @@ public class TestPolicy {
 
     @Test
     public void testGenerateZkContext() {
-        String expectedValue="FreshnessId-REVEAL_b_attribute,REVEAL_k_attribute,REVEAL_l_attribute;EQ_c_attribute_24;-:a_attribute:-PSEUDONYM_scope:a,PSEUDONYM_scope:b;INSPECTION_inspector;-:e_attribute:-INRANGE_1020;-:f_attribute:-LESSTHANOREQUAL_26,LESSTHANOREQUAL_45;";
+        String expectedValue="FreshnessId-REVEAL_b_attribute,REVEAL_k_attribute,REVEAL_l_attribute;EQ_c_attribute_24;-:a_attribute:-PSEUDONYM_scope:a,PSEUDONYM_scope:b;INSPECTION;-:e_attribute:-INRANGE_1020;-:f_attribute:-LESSTHANOREQUAL_1990-09-02T01:02:03,LESSTHANOREQUAL_26;";
         List<Predicate> predicates=new LinkedList<>();
         predicates.add(new Predicate("a_attribute", Operation.INSPECTION));
         predicates.add(new Predicate("a_attribute", Operation.PSEUDONYM,new Attribute("scope:a")));
@@ -30,7 +30,7 @@ public class TestPolicy {
         predicates.add(new Predicate("c_attribute", Operation.EQ,new Attribute(24)));
         predicates.add(new Predicate("e_attribute", Operation.INRANGE,new Attribute(10),new Attribute(20)));
         predicates.add(new Predicate("f_attribute", Operation.LESSTHANOREQUAL,new Attribute(26)));
-        predicates.add(new Predicate("f_attribute", Operation.LESSTHANOREQUAL,new Attribute(45)));
+        predicates.add(new Predicate("f_attribute", Operation.LESSTHANOREQUAL,new Attribute(Util.fromRFC3339UTC("1990-09-02T01:02:03"))));
         predicates.add(new Predicate("k_attribute", Operation.REVEAL));
         predicates.add(new Predicate("l_attribute", Operation.REVEAL));
         Policy policy= new Policy(predicates,"FreshnessId");
@@ -39,7 +39,7 @@ public class TestPolicy {
         predicates2.add(new Predicate("k_attribute", Operation.REVEAL));
         predicates2.add(new Predicate("a_attribute", Operation.PSEUDONYM,new Attribute("scope:a")));
         predicates2.add(new Predicate("a_attribute", Operation.PSEUDONYM,new Attribute("scope:b")));
-        predicates2.add(new Predicate("f_attribute", Operation.LESSTHANOREQUAL,new Attribute(45)));
+        predicates2.add(new Predicate("f_attribute", Operation.LESSTHANOREQUAL,new Attribute(Util.fromRFC3339UTC("1990-09-02T01:02:03"))));
         predicates2.add(new Predicate("c_attribute", Operation.EQ,new Attribute(24)));
         predicates2.add(new Predicate("a_attribute", Operation.INSPECTION));
         predicates2.add(new Predicate("e_attribute", Operation.INRANGE,new Attribute(10),new Attribute(20)));
@@ -59,7 +59,7 @@ public class TestPolicy {
         predicates3.add(new Predicate("b_attribute", Operation.REVEAL));
         predicates3.add(new Predicate("l_attribute", Operation.REVEAL));
         Policy policy3= new Policy(predicates3,"FreshnessId");
-        String expectedValue3="FreshnessId-REVEAL_b_attribute,REVEAL_k_attribute,REVEAL_l_attribute;EQ_c_attribute_24;-:a_attribute:-PSEUDONYM_scope:b,PSEUDONYM_scope:d;INSPECTION_inspector;-:e_attribute:-INRANGE_1020;-:f_attribute:-LESSTHANOREQUAL_45;";
+        String expectedValue3="FreshnessId-REVEAL_b_attribute,REVEAL_k_attribute,REVEAL_l_attribute;EQ_c_attribute_24;-:a_attribute:-PSEUDONYM_scope:b,PSEUDONYM_scope:d;INSPECTION;-:e_attribute:-INRANGE_1020;-:f_attribute:-LESSTHANOREQUAL_45;";
         assertEquals(expectedValue3,policy3.generateZkContext());
 
     }

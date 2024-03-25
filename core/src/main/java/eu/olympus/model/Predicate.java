@@ -71,19 +71,19 @@ public class Predicate {
 			case REVOCATION:
 			case PSEUDONYM:
 			case GREATERTHANOREQUAL:
-				builder.append(value.getAttr().toString());
+				builder.append(value.toString());
 				break;
 			case EQ:
-				builder.append(attributeName).append("_").append(value.getAttr().toString());
+				builder.append(attributeName).append("_").append(value.toString());
 				break;
 			case REVEAL:
 				builder.append(attributeName);
 				break;
 			case INRANGE:
-				builder.append(value.getAttr().toString()).append(extraValue.getAttr().toString());
+				builder.append(value.toString()).append(extraValue.toString());
 				break;
 			case INSPECTION:
-				builder.append("inspector");
+				builder.setLength(builder.length() - 1);
 				break;
 		}
 		return builder.toString();

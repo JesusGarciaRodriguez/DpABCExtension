@@ -5,8 +5,10 @@ import com.google.protobuf.ByteString;
 import eu.olympus.protos.serializer.PabcSerializer;
 
 import java.util.Date;
+import java.util.Objects;
 
 
+import eu.olympus.util.Util;
 import org.apache.commons.codec.Charsets;
 
 public class Attribute {
@@ -93,7 +95,11 @@ public class Attribute {
 
     @Override
     public String toString(){
+        if (Objects.requireNonNull(type) == AttributeType.DATE) {
+            return Util.toRFC3339UTC((Date) attr);
+        }
         return attr.toString();
+
     }
 
     public PabcSerializer.Attribute toProto(){

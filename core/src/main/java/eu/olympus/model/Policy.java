@@ -42,7 +42,7 @@ public class Policy {
 		String revealGoals=predicates.stream().filter(p->p.getOperation()==Operation.REVEAL).sorted(Comparator.comparing(Predicate::getAttributeName)).map(Predicate::serialProofGoal).distinct().collect(Collectors.joining(","));
 		if (!revealGoals.isEmpty())
 			builder.append(revealGoals).append(";");
-		String equalGoals=predicates.stream().filter(p->p.getOperation()==Operation.EQ).sorted(Comparator.comparing(Predicate::getAttributeName).thenComparing(p -> p.getValue().getAttr().toString())).map(Predicate::serialProofGoal).distinct().collect(Collectors.joining(","));
+		String equalGoals=predicates.stream().filter(p->p.getOperation()==Operation.EQ).sorted(Comparator.comparing(Predicate::getAttributeName).thenComparing(p -> p.getValue().toString())).map(Predicate::serialProofGoal).distinct().collect(Collectors.joining(","));
 		if (!equalGoals.isEmpty())
 			builder.append(equalGoals).append(";");
 		//Parse subproof goals ordered according to attribute they apply to
@@ -51,7 +51,7 @@ public class Policy {
 			builder.append("-:").append(attr).append(":-");
 			List<Predicate> preds=predicates.stream().filter(p->p.getAttributeName().equals(attr)).collect(Collectors.toList());
  			//First pseudonym predicates
-			String pseudonymGoals=preds.stream().filter(p->p.getOperation()==Operation.PSEUDONYM).sorted(Comparator.comparing(p -> p.getValue().getAttr().toString())).map(Predicate::serialProofGoal).distinct().collect(Collectors.joining(","));
+			String pseudonymGoals=preds.stream().filter(p->p.getOperation()==Operation.PSEUDONYM).sorted(Comparator.comparing(p -> p.getValue().toString())).map(Predicate::serialProofGoal).distinct().collect(Collectors.joining(","));
 			if (!pseudonymGoals.isEmpty())
 				builder.append(pseudonymGoals).append(";");
 			//Second inspection predicates
@@ -59,17 +59,17 @@ public class Policy {
 			if (!inspectionGoals.isEmpty())
 				builder.append(inspectionGoals).append(";");
 			//Third revocation predicates
-			String revocationGoals=preds.stream().filter(p->p.getOperation()==Operation.REVOCATION).sorted(Comparator.comparing(p -> p.getValue().getAttr().toString())).map(Predicate::serialProofGoal).distinct().collect(Collectors.joining(","));
+			String revocationGoals=preds.stream().filter(p->p.getOperation()==Operation.REVOCATION).sorted(Comparator.comparing(p -> p.getValue().toString())).map(Predicate::serialProofGoal).distinct().collect(Collectors.joining(","));
 			if (!revocationGoals.isEmpty())
 				builder.append(revocationGoals).append(";");
 			//Fourth range predicates
-			String leGoals=preds.stream().filter(p->p.getOperation()==Operation.LESSTHANOREQUAL).sorted(Comparator.comparing(p -> p.getValue().getAttr().toString())).map(Predicate::serialProofGoal).distinct().collect(Collectors.joining(","));
+			String leGoals=preds.stream().filter(p->p.getOperation()==Operation.LESSTHANOREQUAL).sorted(Comparator.comparing(p -> p.getValue().toString())).map(Predicate::serialProofGoal).distinct().collect(Collectors.joining(","));
 			if (!leGoals.isEmpty())
 				builder.append(leGoals).append(";");
-			String geGoals=preds.stream().filter(p->p.getOperation()==Operation.GREATERTHANOREQUAL).sorted(Comparator.comparing(p -> p.getValue().getAttr().toString())).map(Predicate::serialProofGoal).distinct().collect(Collectors.joining(","));
+			String geGoals=preds.stream().filter(p->p.getOperation()==Operation.GREATERTHANOREQUAL).sorted(Comparator.comparing(p -> p.getValue().toString())).map(Predicate::serialProofGoal).distinct().collect(Collectors.joining(","));
 			if (!geGoals.isEmpty())
 				builder.append(geGoals).append(";");
-			String rangeGoals=preds.stream().filter(p->p.getOperation()==Operation.INRANGE).sorted(Comparator.comparing((Predicate p) -> p.getValue().getAttr().toString()).thenComparing((Predicate p) -> p.getExtraValue().getAttr().toString())).map(Predicate::serialProofGoal).distinct().collect(Collectors.joining(","));
+			String rangeGoals=preds.stream().filter(p->p.getOperation()==Operation.INRANGE).sorted(Comparator.comparing((Predicate p) -> p.getValue().toString()).thenComparing((Predicate p) -> p.getExtraValue().toString())).map(Predicate::serialProofGoal).distinct().collect(Collectors.joining(","));
 			if (!rangeGoals.isEmpty())
 				builder.append(rangeGoals).append(";");
 		}
